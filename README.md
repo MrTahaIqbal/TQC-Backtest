@@ -235,13 +235,7 @@ cmake --build build-debug --target backtest -- -j$(nproc)
 
 The Debug build uses `-march=x86-64` (portable baseline — no AVX2 required) and enables AddressSanitizer + UndefinedBehaviorSanitizer. The Release build uses `-march=x86-64-v3` (requires AVX2 + FMA + BMI2).
 
-### Environment Variables
-```bash
-export BACKTEST_SECRET=your_shared_secret   # required
-export PORT=7860                            # optional, default 7860
-export BACKTEST_WORKERS=4                   # optional, default 4, max 64
-./build/backtest
-```
+
 
 <br>
 
@@ -408,7 +402,7 @@ All ratios use `sqrt(525,600)` — the number of **60-second bars per year**. Th
 - **Authentication:** Constant-time XOR-accumulation comparison — immune to timing oracle attacks
 - **DoS protection:** 8 MiB per-request body cap with 413 response; `SO_RCVTIMEO = 5s` per connection
 - **No secret in source:** `BACKTEST_SECRET` loaded exclusively from environment variable
-- **Principle of least privilege:** Container runs as `nobody` (UID 65534)
+- **Principle of least privilege
 - **Signal safety:** `stop()` is the only operation called from the signal handler; it performs only an atomic store
 
 <br>
