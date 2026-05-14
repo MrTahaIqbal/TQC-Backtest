@@ -2,8 +2,8 @@
 /*
  * config.hpp  -  BigBoyAgent TQC Backtest | Taha Iqbal
  *
- * Auth secret loaded from BACKTEST_SECRET env var (mirrors Brain's BRAIN_SECRET).
- * Settings.json is optional — defaults are safe.
+ * 
+ * 
  *
  * FIX [LOW]: Removed version[16] field.  It was initialised to "1.0.0" but
  *            loadConfig() discarded all JSON content, so the field could never
