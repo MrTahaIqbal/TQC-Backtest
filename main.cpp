@@ -27,14 +27,11 @@
  *   POST /walk_forward  — walk-forward validation (auth required)
  *   GET  /results       — last backtest summary (auth required)
  *
- * Auth:
- *   Header:  x-api-key: <BACKTEST_SECRET>
- *   or:      Authorization: Bearer <BACKTEST_SECRET>
  *
- * Environment variables:
- *   BACKTEST_SECRET  — required — shared secret with executor
- *   PORT             — optional — HTTP port, [1,65535], default 7860
- *   BACKTEST_WORKERS — optional — worker thread count, [1,64], default 4
+ *   
+ *   
+ *
+ *
  *
  * ── Fixes applied ─────────────────────────────────────────────────────────────
  *
@@ -692,11 +689,11 @@ int main() {
     // ── PORT parsing ───────────────────────────────────────────────────────────
     // FIX-ATOI: from_chars with range check — atoi is UB on overflow and
     //           returns 0 (random ephemeral bind) on non-numeric input.
-    int port = 7860;
+    int port = ;
     if (const char* p = std::getenv("PORT"); p && *p) {
         int parsed = 0;
         auto [ptr, ec] = std::from_chars(p, p + std::strlen(p), parsed);
-        if (ec == std::errc{} && parsed >= 1 && parsed <= 65535)
+        if (ec == std::errc{} && parsed >= 1 && parsed <= )
             port = parsed;
         else
             std::fprintf(stderr,
