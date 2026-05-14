@@ -1,0 +1,63 @@
+{
+  "_comment": "BigBoyAgent TQC Backtest Space | Taha Iqbal",
+
+  "_env_vars": {
+    "BACKTEST_SECRET": "REQUIRED — shared API key authenticating executor requests. Set as a HuggingFace Space secret environment variable. Never hardcode in this file.",
+    "PORT": "OPTIONAL — HTTP listening port (default: 7860). Must match the EXPOSE directive in the Dockerfile and the executor's BACKTEST_URL."
+  },
+
+  "_config_fields": {
+    "note": "All fields below are optional. Omit any field to use the built-in default shown in the comment. Fields that are present override the default at startup.",
+
+    "initial_balance": {
+      "type": "number",
+      "default": 1000.0,
+      "unit": "USD",
+      "description": "Starting account balance for every backtest and each walk-forward fold."
+    },
+    "risk_pct": {
+      "type": "number",
+      "default": 0.01,
+      "unit": "fraction (0.01 = 1%)",
+      "description": "Fraction of current balance risked per trade. Feeds into GARCH-scaled margin computation."
+    },
+    "leverage": {
+      "type": "integer",
+      "default": 3,
+      "description": "Notional leverage multiplier applied to margin. notional = margin * leverage."
+    },
+    "sl_atr_mult": {
+      "type": "number",
+      "default": 1.5,
+      "description": "Stop-loss distance expressed as a multiple of the bar's ATR. sl_dist = ATR * sl_atr_mult."
+    },
+    "tp_rr_ratio": {
+      "type": "number",
+      "default": 2.0,
+      "description": "Take-profit reward-to-risk ratio. tp_dist = sl_dist * tp_rr_ratio."
+    },
+    "min_confidence": {
+      "type": "number",
+      "default": 0.70,
+      "unit": "fraction (0.70 = 70%)",
+      "description": "Minimum Brain signal confidence required to open a position. Signals below this threshold are ignored."
+    },
+    "fee_pct": {
+      "type": "number",
+      "default": 0.001,
+      "unit": "fraction (0.001 = 0.1% per side)",
+      "description": "Taker fee rate applied symmetrically on open and close. Total round-trip fee = 2 * fee_pct * notional."
+    },
+    "slip_pct": {
+      "type": "number",
+      "default": 0.0002,
+      "unit": "fraction (0.0002 = 0.02% one-way)",
+      "description": "One-way slippage estimate. Applied adversely: long entries fill higher, short entries fill lower."
+    },
+    "max_open": {
+      "type": "integer",
+      "default": 3,
+      "description": "Maximum number of simultaneously open positions across all symbols. Hard cap: min(max_open, 8)."
+    }
+  }
+}
