@@ -84,7 +84,7 @@ struct Route {
 
 class HttpServer {
 public:
-    explicit HttpServer(int port = 7860, int n_workers = 4) noexcept
+    explicit HttpServer(int port = , int n_workers = ) noexcept
         : port_(port), n_workers_(n_workers) {}
 
     void addRoute(const char* method, const char* path,
