@@ -1,17 +1,14 @@
 {
   "_comment": "BigBoyAgent TQC Backtest Space | Taha Iqbal",
 
-  "_env_vars": {
-    "BACKTEST_SECRET": "REQUIRED — shared API key authenticating executor requests. Set as a HuggingFace Space secret environment variable. Never hardcode in this file.",
-    "PORT": "OPTIONAL — HTTP listening port (default: 7860). Must match the EXPOSE directive in the Dockerfile and the executor's BACKTEST_URL."
-  },
+  
 
   "_config_fields": {
     "note": "All fields below are optional. Omit any field to use the built-in default shown in the comment. Fields that are present override the default at startup.",
 
     "initial_balance": {
       "type": "number",
-      "default": 1000.0,
+      "default": ,
       "unit": "USD",
       "description": "Starting account balance for every backtest and each walk-forward fold."
     },
