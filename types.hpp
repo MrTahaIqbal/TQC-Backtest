@@ -86,8 +86,7 @@ struct alignas(64) Bar {
     double   funding_rate = 0.0;   // e.g. 0.0001 = 0.01% per 8hr window
 };
 
-// FIX [HIGH]: Verify Bar has not silently grown due to compiler/platform changes.
-// Update this value if the executor's serialised Bar layout changes.
+
 static_assert(sizeof(Bar) % 8 == 0,
     "Bar size is not 8-byte aligned — executor wire format mismatch likely.");
 
