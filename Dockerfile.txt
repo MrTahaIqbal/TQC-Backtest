@@ -12,7 +12,7 @@
 # CPU REQUIREMENT: The Release binary is compiled with -march=x86-64-v3.
 # It requires AVX2 + FMA + BMI2 (Intel Haswell 2013+, AMD Zen 1 2017+).
 # Running this image on an older or ARM CPU will produce SIGILL at startup.
-# HuggingFace Spaces Intel Xeon hardware satisfies this requirement.
+
 FROM gcc:13-bookworm AS builder
 
 LABEL stage="builder"
@@ -76,31 +76,11 @@ COPY --from=builder /build/build/backtest .
 #   because Docker requires at least one glob match.  The RUN touch workaround
 #   created the file inside the container layer, not the build context, so it
 #   provided no protection against the glob-match error.
-#   Explicit COPY is deterministic and fails clearly if settings.json is absent.
-COPY --chown=nobody:nogroup settings.json /app/settings.json
-
-EXPOSE 7860
-
-# FIX-SECURITY: run as nobody (UID 65534) — no write access to /app.
-# For production deployments, add:
-#   --security-opt no-new-privileges:true
-#   --read-only --tmpfs /tmp
-# to the docker run invocation or equivalent Kubernetes securityContext.
-USER nobody
-
-# Runtime configuration environment variables.
-# BACKTEST_SECRET — required: shared API key for executor authentication.
-#                   Set as a HuggingFace Space secret; never hardcode here.
-# PORT            — optional: listening port (default 7860).
-ENV PORT=7860
-
 # FIX-HEALTHCHECK: wget is now installed in the runtime image.
 # Previously the health check always failed because wget was not available,
 # causing orchestrators to mark the container unhealthy immediately.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost:${PORT}/health \
-        | grep -q '"status":"ok"' || exit 1
-
+   
 # CPU guard: if the host CPU does not support AVX2, the binary exits with
 # SIGILL here.  See the cpu_requirement LABEL and the comment at the top
 # of this file for the supported hardware baseline.
