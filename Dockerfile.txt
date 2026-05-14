@@ -1,0 +1,107 @@
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+# gcc:13-bookworm = GCC 13 on Debian Bookworm (glibc).
+# GCC 13 fully supports C++20 including std::jthread, std::bit_cast, std::span.
+#
+# REPRODUCIBILITY NOTE: Floating tags (gcc:13-bookworm, debian:bookworm-slim)
+# are used here for readability.  For a fully reproducible production build,
+# pin both to a specific digest:
+#   FROM gcc:13-bookworm@sha256:<digest> AS builder
+#   FROM debian:bookworm-slim@sha256:<digest>
+# Obtain current digests via: docker buildx imagetools inspect gcc:13-bookworm
+#
+# CPU REQUIREMENT: The Release binary is compiled with -march=x86-64-v3.
+# It requires AVX2 + FMA + BMI2 (Intel Haswell 2013+, AMD Zen 1 2017+).
+# Running this image on an older or ARM CPU will produce SIGILL at startup.
+# HuggingFace Spaces Intel Xeon hardware satisfies this requirement.
+FROM gcc:13-bookworm AS builder
+
+LABEL stage="builder"
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cmake ninja-build curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# FIX-JSON: COPY sources FIRST, then download json.hpp so the downloaded
+# pinned version unconditionally overwrites any stale json.hpp that might
+# exist in the build context.  Original order (download then COPY) allowed
+# a host-side json.hpp to silently replace the pinned dependency.
+COPY *.hpp *.cpp CMakeLists.txt ./
+
+# Download nlohmann/json single-header AFTER COPY so it always wins.
+# Pin to v3.11.3 — the version validated against this codebase.
+RUN curl -fsSL \
+    https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp \
+    -o /build/json.hpp
+
+# Configure and build.
+RUN cmake -B build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CXX_COMPILER=g++ \
+      -DCMAKE_C_COMPILER=gcc
+
+RUN cmake --build build --target backtest -- -j"$(nproc)"
+
+RUN ls -lh build/backtest && echo "Backtest build OK."
+
+# ── Stage 2: Runtime ───────────────────────────────────────────────────────────
+# debian:bookworm-slim provides glibc — ABI-compatible with the builder image.
+FROM debian:bookworm-slim
+
+# FIX-META: standard image labels for registry indexing and operator reference.
+LABEL maintainer="Taha Iqbal" \
+      version="1.0" \
+      description="BigBoyAgent TQC Backtest — HFT-grade C++20 backtest engine" \
+      cpu_requirement="x86-64-v3 (AVX2+FMA+BMI2 — Intel Haswell+ / AMD Zen1+)"
+
+# FIX-WGET: added wget for the HEALTHCHECK command.
+#           Original image omitted wget; every health probe returned non-zero,
+#           marking the container permanently unhealthy on all orchestrators.
+# FIX-CA:   added ca-certificates as a baseline for any future TLS operations.
+#           Without it, outbound HTTPS connections fail certificate verification.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 \
+        libgcc-s1 \
+        wget \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /build/build/backtest .
+
+# FIX-JSON-COPY: explicit filename instead of *.json glob.
+#   COPY *.json fails the build if no .json files exist in the build context
+#   because Docker requires at least one glob match.  The RUN touch workaround
+#   created the file inside the container layer, not the build context, so it
+#   provided no protection against the glob-match error.
+#   Explicit COPY is deterministic and fails clearly if settings.json is absent.
+COPY --chown=nobody:nogroup settings.json /app/settings.json
+
+EXPOSE 7860
+
+# FIX-SECURITY: run as nobody (UID 65534) — no write access to /app.
+# For production deployments, add:
+#   --security-opt no-new-privileges:true
+#   --read-only --tmpfs /tmp
+# to the docker run invocation or equivalent Kubernetes securityContext.
+USER nobody
+
+# Runtime configuration environment variables.
+# BACKTEST_SECRET — required: shared API key for executor authentication.
+#                   Set as a HuggingFace Space secret; never hardcode here.
+# PORT            — optional: listening port (default 7860).
+ENV PORT=7860
+
+# FIX-HEALTHCHECK: wget is now installed in the runtime image.
+# Previously the health check always failed because wget was not available,
+# causing orchestrators to mark the container unhealthy immediately.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -qO- http://localhost:${PORT}/health \
+        | grep -q '"status":"ok"' || exit 1
+
+# CPU guard: if the host CPU does not support AVX2, the binary exits with
+# SIGILL here.  See the cpu_requirement LABEL and the comment at the top
+# of this file for the supported hardware baseline.
+CMD ["./backtest"]
