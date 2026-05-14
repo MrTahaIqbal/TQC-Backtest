@@ -157,9 +157,7 @@ void HttpServer::addRoute(const char* method, const char* path,
 }
 
 // ── HttpServer::checkAuth ──────────────────────────────────────────────────────
-// FIX-TIMING: replaced strncmp with constant_time_eq.
-// Both api_key and auth_bearer are tested; both comparisons always run to
-// completion regardless of mismatch position, eliminating timing oracle.
+
 bool HttpServer::checkAuth(const HttpRequest& req) const noexcept {
     const char* secret = globalConfig().secret_key;
     const std::string_view sv_secret(secret, std::strlen(secret));
