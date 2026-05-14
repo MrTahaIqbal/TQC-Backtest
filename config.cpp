@@ -1,7 +1,7 @@
 /*
  * config.cpp  -  BigBoyAgent TQC Backtest | Taha Iqbal
  *
- * Reads BACKTEST_SECRET from environment (mirrors Brain's BRAIN_SECRET pattern).
+ * 
  *
  * FIX [HIGH]:   Entire function body wrapped in try/catch so the noexcept
  *               guarantee is unconditionally upheld.  Previously only the JSON
